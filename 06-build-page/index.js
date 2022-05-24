@@ -10,23 +10,21 @@ const newAssets = path.join(project, 'assets');
 const components = path.join(__dirname, 'components');
 
 async function buildPage() {
+  await fsPromises.rm(project, {recursive: true, force: true,}, (err) => {
+    if (err) {throw err;}
+  });
   fsPromises.mkdir(project, {recursive: true});
   const exampleFile = await fsPromises.readFile(example, 'utf-8');
   await fsPromises.writeFile(htmlFile, exampleFile);
-  const str = await fsPromises.readFile(htmlFile, 'utf-8');
-
-  const reHeader = /{{header}}/g;
-  const newHeader = await fsPromises.readFile((path.join(components, 'header.html')), 'utf-8');
-
-  const reArticles = /{{articles}}/g;
-  const newArticles = await fsPromises.readFile((path.join(components, 'articles.html')), 'utf-8');
-
-  const reFooter = /{{footer}}/g;
-  const newFooter = await fsPromises.readFile((path.join(components, 'footer.html')), 'utf-8');
-
-  let newHtml = str.replace(reHeader, newHeader).replace(reArticles, newArticles).replace(reFooter, newFooter);
-  fsPromises.writeFile(htmlFile, newHtml);
-
+  let newHtml = await fsPromises.readFile(htmlFile, 'utf-8');
+  const compFiles = await fsPromises.readdir(components, { withFileTypes: true });
+  for (let i = 0; i < compFiles.length; i++) {
+    const file = await fsPromises.readFile(components + '/' + compFiles[i].name, 'utf-8');
+    const regExp = new RegExp(`{{${(compFiles[i].name).split('.')[0]}}}`, 'g');
+    newHtml = newHtml.replace(regExp, file);
+  }
+  await fsPromises.writeFile(htmlFile, newHtml);
+  
   async function write() {
     const stylesFiles = await fsPromises.readdir(styles);
     for (let i = 0; i < stylesFiles.length; i++) {
@@ -39,7 +37,11 @@ async function buildPage() {
   write();
 
   async function copy() {
+    await fsPromises.rm(newAssets, {recursive: true, force: true,}, (err) => {
+      if (err) {throw err;}
+    });
     fsPromises.mkdir(newAssets, {recursive: true});
+
     const fonts = path.join(assets, 'fonts');
     const fontsFiles = await fsPromises.readdir(fonts);
     const newFonts = path.join(newAssets, 'fonts');
@@ -49,6 +51,7 @@ async function buildPage() {
       const destFile = path.join(newFonts, fontsFiles[i]);
       fsPromises.copyFile(srcFile, destFile);
     }
+
     const images = path.join(assets, 'img');
     const imgFiles = await fsPromises.readdir(images);
     const newImg = path.join(newAssets, 'img');
@@ -58,6 +61,7 @@ async function buildPage() {
       const destFile = path.join(newImg, imgFiles[i]);
       fsPromises.copyFile(srcFile, destFile);
     }
+
     const svgs = path.join(assets, 'svg');
     const svgFiles = await fsPromises.readdir(svgs);
     const newSvg = path.join(newAssets, 'svg');
