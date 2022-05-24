@@ -5,6 +5,9 @@ const project = path.join(__dirname, 'project-dist');
 const bundle = path.join(project, 'bundle.css');
 
 async function write() {
+  if (fsPromises.stat(bundle)) {
+    await fsPromises.rm(bundle);
+  }
   const stylesFiles = await fsPromises.readdir(styles);
   for (let i = 0; i < stylesFiles.length; i++) {
     if (stylesFiles[i].includes('css')) {
