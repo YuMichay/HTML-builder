@@ -4,13 +4,9 @@ const folder = path.join(__dirname, 'files');
 const newFolder = path.join(__dirname, 'files-copy');
 
 async function copy() {
-  if (fsPromises.stat(newFolder)) {
-    const files =  await fsPromises.readdir(newFolder);
-    for (let i = 0; i < files.length; i++) {
-      await fsPromises.rm(newFolder + '/' + files[i]);
-    }
-    await fsPromises.rmdir(newFolder);
-  }
+  await fsPromises.rm(newFolder, {recursive: true, force: true,}, (err) => {
+    if (err) {throw err;}
+  });
   fsPromises.mkdir(newFolder, { recursive: true }, (err) => {
     if (err) throw err;
   });
